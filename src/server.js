@@ -1,7 +1,7 @@
 import express from "express";
 import http from "http";
-import SocketIO from "socket.io";
-import { setTimeout } from "timers/promises";
+import { Server } from "socket.io";
+import { instrument } from "@socket.io/admin-ui";
 const app = express();
 
 app.set("view engine", "pug");
@@ -13,7 +13,16 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
 // 동일한 리소스에 대해 두 개의 프로토콜이 모두 동작하도록 설정
 const httpServer = http.createServer(app); // http 서버 생성
-const wsServer = SocketIO(httpServer); // ws 서버 생성
+const wsServer = new Server(httpServer, {
+  cors: {
+    origin: ["https://admin.socket.io"],
+    credentials: true
+  }
+}); // ws 서버 생성
+
+instrument(wsServer, {
+  auth: false,
+});
 
 function publicRooms() {
   const {
