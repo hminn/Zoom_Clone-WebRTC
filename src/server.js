@@ -1,6 +1,7 @@
 import express from "express";
 import http from "http";
-import SocketIO from 'socket.io';
+import SocketIO from "socket.io";
+import { setTimeout } from "timers/promises";
 const app = express();
 
 app.set("view engine", "pug");
@@ -14,9 +15,48 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 const httpServer = http.createServer(app); // http 서버 생성
 const wsServer = SocketIO(httpServer); // ws 서버 생성
 
-wsServer.on("connection", socket => {
-  console.log(socket);
-})
+function publicRooms() {
+  const {
+    sockets: {
+      adapter: { sids, rooms },
+    }
+  } = wsServer;
+  const publicRooms = [];
+  rooms.forEach((_, key) => {
+    if(sids.get(key) === undefined) {
+      publicRooms.push(key);
+    }
+  })
+  return publicRooms;
+}
+
+function countRoom(roomName) {
+  return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+}
+wsServer.on("connection", (socket) => {
+  socket["nickname"] = "Anonymous";
+  socket.onAny((event) => {
+    console.log(`Socket Event:${event}`);
+  })
+	socket.on("enter_room", (roomName, done) => {
+    socket.join(roomName);
+    const count = countRoom(roomName)
+    done(count);
+    socket.to(roomName).emit("welcome", socket.nickname, count);
+    wsServer.sockets.emit("room_change", publicRooms());
+	});
+  socket.on("disconnecting", () => {
+    socket.rooms.forEach(room => socket.to(room).emit("bye", socket.nickname, countRoom(room) - 1));
+  })
+  socket.on("disconnect", () => {
+    wsServer.sockets.emit("room_change", publicRooms());
+  })
+  socket.on("new_message", (msg, room, done) => {
+    socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
+    done();
+  })
+  socket.on("nickname", nickname => socket["nickname"] = nickname);
+});
 
 httpServer.listen(3000, handleListen); // 3000번 포트를 통해, http 서버, WS 서버를 모두 동작시킬 수 있다.
 /*
