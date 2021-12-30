@@ -65,6 +65,11 @@ wsServer.on("connection", (socket) => {
     done();
   })
   socket.on("nickname", nickname => socket["nickname"] = nickname);
+  socket.on("exit_room", (roomName) => {
+    socket.leave(roomName);
+    wsServer.sockets.emit("room_change", publicRooms());
+    socket.to(roomName).emit("bye", socket.nickname, countRoom(roomName))
+  })
 });
 
 httpServer.listen(3000, handleListen); // 3000번 포트를 통해, http 서버, WS 서버를 모두 동작시킬 수 있다.

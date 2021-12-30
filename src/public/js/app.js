@@ -6,7 +6,10 @@ const roomNameForm = welcome.querySelector("form");
 const room = document.getElementById("room");
 const headerNickname = document.getElementById("header-nick");
 const Nicknameform = nickname.querySelector("#name");
+const roomExit = document. getElementById("exit");
+const exitBtn = roomExit.querySelector("button");
 
+roomExit.hidden = true;
 room.hidden = true;
 let roomName;
 
@@ -35,8 +38,6 @@ function handleNicknameSubmit(event) {
   input.value = "";
 }
 
-Nicknameform.addEventListener("submit", handleNicknameSubmit);
-
 function updateRoomName(count) {
   const h3 = room.querySelector("h3");
   h3.innerText = `Room ${roomName} (${count})`;
@@ -45,6 +46,7 @@ function updateRoomName(count) {
 function showRoom(count) {
   welcome.hidden = true;
   room.hidden = false;
+  roomExit.hidden = false;
   updateRoomName(count);
   const msgform = room.querySelector("#msg");
   msgform.addEventListener("submit", handleMessageSubmit);
@@ -58,7 +60,20 @@ function handleRoomSubmit(event) {
   input.value = "";
 }
 
+function handleExitBtnClick(event) {
+  event.preventDefault();
+  const msgList = room.querySelector("ul");
+  welcome.hidden = false;
+  room.hidden = true;
+  roomExit.hidden = true;
+  msgList.innerHTML = "";
+  socket.emit("exit_room", roomName);
+  roomName = "";
+}
+
+Nicknameform.addEventListener("submit", handleNicknameSubmit);
 roomNameForm.addEventListener("submit", handleRoomSubmit)
+exitBtn.addEventListener("click", handleExitBtnClick)
 
 socket.on("welcome", (user, newCount) => {
   updateRoomName(newCount)
