@@ -1,6 +1,6 @@
 import express from "express";
 import http from "http";
-import WebSocket from 'ws';
+import SocketIO from 'socket.io';
 const app = express();
 
 app.set("view engine", "pug");
@@ -11,7 +11,15 @@ app.get("/", (req, res) => res.render("home"));
 const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
 // 동일한 리소스에 대해 두 개의 프로토콜이 모두 동작하도록 설정
-const server = http.createServer(app); // http 서버 생성
+const httpServer = http.createServer(app); // http 서버 생성
+const wsServer = SocketIO(httpServer); // ws 서버 생성
+
+wsServer.on("connection", socket => {
+  console.log(socket);
+})
+
+httpServer.listen(3000, handleListen); // 3000번 포트를 통해, http 서버, WS 서버를 모두 동작시킬 수 있다.
+/*
 const wss = new WebSocket.Server({ server }); // 생성된 http 서버 위에 WebSocket 서버를 올리는 코드
 
 // 소켓 저장 공간
@@ -49,5 +57,4 @@ wss.on("connection", (socket) => {
   socket.on("close", onSocketClose); // 해당 소켓이 종료되었을 때
   socket.on("message", onSocketMessage); // 해당 소켓을 통해 메세지를 수신했을 때
 });
-
-server.listen(3000, handleListen); // 3000번 포트를 통해, http 서버, WS 서버를 모두 동작시킬 수 있다.
+*/
